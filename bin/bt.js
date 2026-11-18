@@ -7,6 +7,7 @@
  *   bt bot <handle>      bot profile, public-ladder rank/rating, cups, version health
  *   bt cup [handle]      promotedby.ai November Cup standings (top 10 + your bot)
  *   bt matches <handle>  recent sets, newest first
+ *   bt opponents <handle> head-to-head record vs every opponent (--vs <bot> for one)
  *   bt ladders           every ladder and cup on the arena
  *
  * Flags: --json (raw API JSON), --limit <n> (matches / cup rows).
@@ -14,9 +15,9 @@
  * Data: battle.training (CC BY 4.0) — https://battle.training
  */
 
-const { cmdBot, cmdCup, cmdMatches, cmdLadders } = require('../lib/commands');
+const { cmdBot, cmdCup, cmdMatches, cmdOpponents, cmdLadders } = require('../lib/commands');
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 
 const USAGE = `bt — battle.training CLI ${VERSION}
 
@@ -24,11 +25,13 @@ Usage:
   bt bot <handle>        bot profile, public-ladder rank/rating, cups, version health
   bt cup [handle]        promotedby.ai November Cup standings (default highlight: aralie)
   bt matches <handle>    recent sets, newest first
+  bt opponents <handle>  head-to-head record vs every opponent
   bt ladders             every ladder and cup on the arena
 
 Flags:
   --json                 print the raw API response as JSON
   --limit <n>            rows to show (matches: default 10, cup: default 10)
+  --vs <bot>             with opponents: show only the record vs that bot
   -h, --help             show this help
   -v, --version          show the version
 
@@ -36,6 +39,8 @@ Examples:
   bt bot aralie
   bt cup
   bt matches aralie --limit 5
+  bt opponents aralie
+  bt opponents aralie --vs tokrus
   bt ladders
 
 Data: battle.training (CC BY 4.0) — https://battle.training
@@ -43,11 +48,19 @@ Data: battle.training (CC BY 4.0) — https://battle.training
 
 function parseArgs(argv) {
   const positional = [];
-  const opts = { json: false, limit: null };
+  const opts = { json: false, limit: null, vs: null };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === '--json') {
       opts.json = true;
+    } else if (arg === '--vs') {
+      const name = argv[++i];
+      if (!name || name.startsWith('-')) throw new Error('--vs needs a bot handle');
+      opts.vs = name;
+    } else if (arg.startsWith('--vs=')) {
+      const name = arg.slice('--vs='.length);
+      if (!name) throw new Error('--vs needs a bot handle');
+      opts.vs = name;
     } else if (arg === '--limit') {
       const n = Number(argv[++i]);
       if (!Number.isInteger(n) || n <= 0) throw new Error('--limit needs a positive integer');
@@ -95,6 +108,11 @@ async function main() {
     case 'matches': {
       if (!rest[0]) throw new Error('usage: bt matches <handle>');
       await cmdMatches(rest[0], opts);
+      break;
+    }
+    case 'opponents': {
+      if (!rest[0]) throw new Error('usage: bt opponents <handle>');
+      await cmdOpponents(rest[0], opts);
       break;
     }
     case 'ladders': {

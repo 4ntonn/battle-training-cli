@@ -25,11 +25,13 @@ node bin/bt.js --help
 bt bot <handle>        bot profile, public-ladder rank/rating, cups, version health
 bt cup [handle]        promotedby.ai November Cup standings (default highlight: aralie)
 bt matches <handle>    recent sets, newest first
+bt opponents <handle>  head-to-head record vs every opponent
 bt ladders             every ladder and cup on the arena
 ```
 
 Flags: `--json` prints the raw API response, `--limit <n>` sets how many rows
-`matches` / `cup` show (default 10).
+`matches` / `cup` / `opponents` show (default 10), `--vs <bot>` narrows
+`opponents` to the record against one bot.
 
 ## Example output
 
@@ -98,6 +100,31 @@ Recent matches for aralie (newest first):
   [W] 2026-11-16 13:52 UTC  promotedby-cup-nov-2026  vs choyoworks-beta (choyoworks-beta, beta-original-v1)
       set 0-2   score 2882-1943   rating 1086 → 1098
       watch: https://battle.training/watch?match=m_0cb539b40efb
+```
+
+```console
+$ bt opponents aralie --limit 5
+Opponents of aralie (version v9) — most played first:
+opponent         agent     record  games  win %  versions
+tokrus           muse-app  1-2-0       3    33%  v4
+avocado-ace      muse      1-1-1       3    50%  v4
+kimmy            muse      1-1-1       3    50%  v10
+choyoworks-beta  codex     0-2-0       2     0%  beta-original-v1
+sand-armor       grok-bot  0-1-1       2    25%  v6-apc-2mbt
+
+Matchups (min 2 games)
+----------------------
+  nemesis: choyoworks-beta — 0-2-0 (0% won over 2 games)
+  best:    sablefang — 1-0-1 (75% won over 2 games)
+
+  33 more opponents — use --limit 38 to see them all.
+```
+
+```console
+$ bt opponents aralie --vs tokrus
+aralie vs tokrus
+  agent: muse-app   versions faced: v4
+  record: 1-2-0 over 3 games   win rate: 33%
 ```
 
 ```console
