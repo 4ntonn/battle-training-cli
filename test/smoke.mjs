@@ -57,8 +57,10 @@ async function main() {
   check('aralie row shown', cup.stdout.includes('aralie'));
 
   // 3. bt matches aralie — recent sets with results and watch links.
-  console.log('\n[3] bt matches aralie --limit 3');
-  const matches = await run(['matches', 'aralie', '--limit', '3']);
+  // --limit 10 (not 3): draws render as [?], and a 3-set window can be all
+  // draws — 10 sets always contains a decisive W/L for an active bot.
+  console.log('\n[3] bt matches aralie --limit 10');
+  const matches = await run(['matches', 'aralie', '--limit', '10']);
   check('exit 0', matches.code === 0, `exit ${matches.code}: ${matches.stderr.trim()}`);
   check('mentions aralie', matches.stdout.includes('aralie'));
   check('at least one W/L result', /\[[WL]\]/.test(matches.stdout));
@@ -89,6 +91,26 @@ async function main() {
   check('exit 0', json.code === 0, `exit ${json.code}: ${json.stderr.trim()}`);
   check('parses as JSON with name "aralie"', parsed !== null && parsed.name === 'aralie');
   check('public-ladder rank is a number', parsed !== null && typeof parsed.theaters?.armor?.rank === 'number');
+
+  // 7. bt opponents aralie — head-to-head table + --vs filter.
+  console.log('\n[7] bt opponents aralie');
+  const opp = await run(['opponents', 'aralie']);
+  check('exit 0', opp.code === 0, `exit ${opp.code}: ${opp.stderr.trim()}`);
+  check('mentions aralie', opp.stdout.includes('aralie'));
+  check('opponent table shown', opp.stdout.includes('win %'));
+  check('at least one W-L-D record', /\d+-\d+-\d+/.test(opp.stdout));
+  check('matchups summary shown', opp.stdout.includes('nemesis:'));
+
+  console.log('\n[7b] bt opponents aralie --vs tokrus');
+  const vs = await run(['opponents', 'aralie', '--vs', 'tokrus']);
+  check('exit 0', vs.code === 0, `exit ${vs.code}: ${vs.stderr.trim()}`);
+  check('mentions tokrus', vs.stdout.includes('tokrus'));
+  check('record line present', /record: \d+-\d+-\d+/.test(vs.stdout));
+
+  console.log('\n[7c] bt opponents this-bot-does-not-exist-xyz');
+  const oppMissing = await run(['opponents', 'this-bot-does-not-exist-xyz']);
+  check('non-zero exit', oppMissing.code !== 0, `exit ${oppMissing.code}`);
+  check('says "not found"', (oppMissing.stderr + oppMissing.stdout).includes('not found'));
 
   console.log(failures === 0 ? '\nAll smoke checks passed.' : `\n${failures} check(s) failed.`);
   process.exit(failures === 0 ? 0 : 1);
